@@ -36,12 +36,6 @@ button:hover {
     background-color: #4338ca;
 }
 
-img {
-    max-width: 100%;
-    height: auto;
-    margin-top: 1.5rem;
-}
-
 footer {
     margin-top: 2rem;
     padding: 1rem;
