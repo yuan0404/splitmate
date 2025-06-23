@@ -25,14 +25,34 @@
         <p> 簡單好用的分帳工具網站 </p>
     </header>
 
-    <section>
-        <h2>哈囉，我是你的分帳小幫手</h2>
-        <p>這裡可以記錄分帳狀況，幫你計算每個人的費用</p>
+    <section class="sections">
+        <div class="section left">
+            <h2>帳本管理</h2>
+            <ul id="notebookList">
+            </ul>
 
-        <button id="loadBtn"> 讀取資料 </button>
-        <button id="addBtn"> 新增資料 </button>
-        <button id="saveBtn"> 儲存資料 </button>
-        <button id="clearBtn"> 清除資料</button>
+            <input type="text" id="notebookInput" placeholder="新帳本名稱">
+            <button id="createNotebookBtn">建立帳本</button>
+        </div>
+
+        <div class="section right">
+            <h2> 哈囉，我是你的分帳小幫手 </h2>
+            <p> 這裡可以記錄分帳狀況，幫你計算每個人的費用 </p>
+
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th>名字</th>
+                        <th>金額 (元)</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+
+            <button id="clearBtn"> 清除資料 </button>
+        </div>
     </section>
 
     <footer>
