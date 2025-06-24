@@ -49,7 +49,11 @@ function renderTable() {
     splitData.forEach((p, i) => {
         $tbody.append(`
             <tr>
-                <td>${p.name}</td>
+                <td>${p.date}</td>
+                <td>${p.item}</td>
+                <td>${p.payer}</td>
+                <td>${p.total}</td>
+                <td>${p.split}</td>
                 <td>${p.amount}</td>
                 <td><button class="deleteBtn" data-index="${i}">刪除</button></td>
             </tr>
@@ -58,7 +62,11 @@ function renderTable() {
 
     $tbody.append(`
         <tr>
-            <td><input type="text" id="inputName" placeholder="輸入名字"></td>
+            <td><input type="text" id="inputDate" placeholder="MM/DD" pattern="\\d{2}/\\d{2}"></td>
+            <td><input type="text" id="inputItem" placeholder="輸入項目"></td>
+            <td><input type="text" id="inputPayer" placeholder="輸入付款"></td>
+            <td><input type="text" id="inputTotal" placeholder="輸入總額"></td>
+            <td><input type="text" id="inputSplit" placeholder="輸入分帳"></td>
             <td><input type="text" id="inputAmount" placeholder="輸入金額"></td>
             <td><button class="addBtn"> 新增 </button></td>
         </tr>
@@ -121,24 +129,49 @@ $(document).ready(function () {
             return;
         }
 
-        const name = $("#inputName").val().trim();
-        const amount = $("#inputAmount").val().trim();
-        const num = parseFloat(amount);
+        const date = $("#inputDate").val().trim();
+        const item = $("#inputItem").val().trim();
+        const payer = $("#inputPayer").val().trim();
+        const totalStr = $("#inputTotal").val().trim();
+        const total = parseFloat(totalStr);
+        const split = $("#inputSplit").val().trim();
+        const amountStr = $("#inputAmount").val().trim();
+        const amount = parseFloat(amountStr);
 
-        if (!name) {
-            alert("請輸入名字");
+        if (!date || !/^\d{2}\/\d{2}$/.test(date)) {
+            alert("請輸入正確的日期格式 (MM/DD)");
             return;
         }
-        if (!amount || isNaN(num) || num <= 0) {
+        if (!item) {
+            alert("請輸入項目");
+            return;
+        }
+        if (!payer) {
+            alert("請輸入付款人");
+            return;
+        }
+        if (!totalStr || isNaN(total) || total <= 0) {
+            alert("請輸入正確的總額");
+            return;
+        }
+        if (!split) {
+            alert("請輸入分帳人");
+            return;
+        }
+        if (!amountStr || isNaN(amount) || amount <= 0) {
             alert("請輸入正確的金額");
             return;
         }
 
-        splitData.push({ name: name, amount: num });
+        splitData.push({ date: date, item: item, payer: payer, total: total, split: split, amount: amount });
         localStorage.setItem(currentNotebook, JSON.stringify(splitData));
         renderTable();
 
-        $("#inputName").val("");
+        $("#inputDate").val("");
+        $("#inputItem").val("");
+        $("#inputPayer").val("");
+        $("#inputTotal").val("");
+        $("#inputSplit").val("");
         $("#inputAmount").val("");
     });
 
