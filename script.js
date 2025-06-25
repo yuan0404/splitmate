@@ -74,11 +74,14 @@ function renderTable() {
 
     if (!currentNotebook) {
         $tbody.append("<tr><td colspan='7'>請先選擇或創建一個帳本</td></tr>");
+        $("#resultArea").val("");
         return;
     }
 
+    members = JSON.parse(localStorage.getItem(`M_${currentNotebook}`)) || [];
     if (members.length === 0) {
         $tbody.append("<tr><td colspan='7'>目前沒有成員，請先新增成員</td></tr>");
+        $("#resultArea").val("");
         return;
     }
 
@@ -105,6 +108,56 @@ function renderTable() {
             <td><button class="addBtn"> 新增 </button></td>
         </tr>
     `);
+
+    const paid = {};
+    const shouldPay = {};
+
+    members.forEach(m => {
+        paid[m] = 0;
+        shouldPay[m] = 0;
+    });
+
+    data.forEach(p => {
+        paid[p.payer] += parseFloat(p.total);
+        p.split.forEach(s => {
+            const [name, amount] = s.split(":").map(x => x.trim());
+            shouldPay[name] += parseFloat(amount);
+        });
+    });
+
+    const balances = members.map(m => ({
+        name: m,
+        balance: +(paid[m] - shouldPay[m]).toFixed(2)
+    }));
+    const creditors = balances.filter(b => b.balance > 0).sort((a, b) => b.balance - a.balance);
+    const debtors = balances.filter(b => b.balance < 0).sort((a, b) => a.balance - b.balance);
+
+    const allNames = [...debtors, ...creditors].map(p => p.name);
+    const maxNameLength = allNames.reduce((max, name) => Math.max(max, name.length), 0);
+
+    const lines = [];
+
+    let i = 0, j = 0;
+    while (i < debtors.length && j < creditors.length) {
+        const debtor = debtors[i];
+        const creditor = creditors[j];
+        const amount = Math.min(-debtor.balance, creditor.balance);
+
+        if (amount > 0.01) {
+            const from = debtor.name.padEnd(maxNameLength, " ");
+            const to = creditor.name.padEnd(maxNameLength, " ");
+            const amt = `$${amount.toFixed(2)}`.padStart(6, " ");
+            lines.push(`${from} → ${to}: ${amt}`);
+        }
+
+        debtor.balance += amount;
+        creditor.balance -= amount;
+
+        if (Math.abs(debtor.balance) < 0.01) i++;
+        if (creditor.balance < 0.01) j++;
+    }
+
+    $("#resultArea").val(lines.join("\n"));
 }
 
 $(document).ready(function () {
@@ -296,7 +349,7 @@ $(document).ready(function () {
     $("#importBtn").click(function () {
         const fileInput = document.getElementById("inputFile");
         const file = fileInput.files[0];
-    
+
         if (!file) {
             alert("請先選擇一個 JSON 檔案！");
             return;
