@@ -21,49 +21,336 @@
 
 <body>
     <header>
-        <h1> 歡迎來到 SplitMate </h1>
+        <h1> SplitMate </h1>
         <p> 簡單好用的分帳工具網站 </p>
     </header>
 
-    <section class="sections">
-        <div class="section left">
-            <h2>帳本管理</h2>
+    <section>
+        <div class="left sections">
+            <h2> 帳本管理 </h2>
             <ul id="notebookList"></ul>
-            <input type="text" id="inputNotebook" placeholder="新帳本名稱">
-            <button id="createNotebookBtn">建立帳本</button>
+
+            <script>
+                $(document).ready(function () {
+                    $("#notebookList").on("click", ".notebookItem", function () {
+                        const selected = String($(this).data("name"));
+                        if (selected === currentNotebook) return;
+                        currentNotebook = selected;
+                        isEditing = false;
+                        localStorage.setItem("currentNotebook", currentNotebook);
+                        refresh();
+                    });
+
+                    $("#notebookList").on("click", ".deleteMemberBtn", function () {
+                        const member = $(this).data("member");
+                        members = JSON.parse(localStorage.getItem(`M_${currentNotebook}`)) || [];
+                        const index = members.indexOf(member);
+                        members.splice(index, 1);
+                        localStorage.setItem(`M_${currentNotebook}`, JSON.stringify(members));
+                        refresh();
+                        $(".memberInput").focus();
+                    });
+
+                    $("#notebookList").on("click", ".addMemberBtn", function () {
+                        const member = $(".memberInput").val().trim();
+                        if (!member) {
+                            alert("請輸入成員名稱");
+                            $(".memberInput").focus();
+                            return;
+                        }
+
+                        members = JSON.parse(localStorage.getItem(`M_${currentNotebook}`)) || [];
+                        if (members.includes(member)) {
+                            alert("成員已存在！");
+                            $(".memberInput").focus();
+                            return;
+                        }
+
+                        members.push(member);
+                        localStorage.setItem(`M_${currentNotebook}`, JSON.stringify(members));
+                        refresh();
+                        $(".memberInput").focus();
+                    });
+
+                    $("#notebookList").on("click", ".editNotebookBtn", function () {
+                        $(".memberInput").toggle();
+                        $(".addMemberBtn").toggle();
+                        $(".deleteMemberBtn").toggle();
+
+                        isEditing = !isEditing;
+                        if (isEditing) {
+                            $(this).text("完成編輯");
+                        } else {
+                            $(this).text("編輯成員");
+                        }
+
+                        refresh();
+                        if (isEditing) {
+                            $(".memberInput").focus();
+                        }
+                    });
+
+                    $("#notebookList").on("click", ".deleteNotebookBtn", function () {
+                        const index = $(this).closest(".notebookItem").data("index");
+                        const notebook = notebooks[index];
+
+                        if (confirm(`你確定要刪除此帳本嗎？`)) {
+                            notebooks.splice(index, 1);
+                            members = [];
+                            data = [];
+                            localStorage.setItem("notebooks", JSON.stringify(notebooks));
+                            localStorage.removeItem(`M_${notebook}`);
+                            localStorage.removeItem(`D_${notebook}`);
+                            refresh();
+                        }
+                    });
+                });
+            </script>
+
+            <input type="text" id="notebookInput" placeholder="輸入帳本名稱">
+            <button id="createNotebookBtn"> 建立帳本 </button>
             <br>
-            <input type="file" id="inputFile" accept=".json" style="display: none;">
-            <label for="inputFile" id="inputFileDisplay"> 選擇檔案 </label>
-            <button id="importBtn"> 匯入帳本 </button>
+
+            <script>
+                $(document).ready(function () {
+                    $("#createNotebookBtn").click(function () {
+                        const notebook = $("#notebookInput").val().trim();
+
+                        if (!notebook) {
+                            alert("請輸入帳本名稱！");
+                            $("#notebookInput").focus();
+                            return;
+                        }
+                        if (notebooks.includes(notebook)) {
+                            alert("帳本名稱已存在！");
+                            $("#notebookInput").focus();
+                            return;
+                        }
+
+                        notebooks.push(notebook);
+                        currentNotebook = notebook;
+                        members = [];
+                        data = [];
+                        localStorage.setItem("notebooks", JSON.stringify(notebooks));
+                        localStorage.setItem("currentNotebook", currentNotebook);
+                        localStorage.setItem(`M_${currentNotebook}`, JSON.stringify(members));
+                        localStorage.setItem(`D_${currentNotebook}`, JSON.stringify(data));
+                        refresh();
+                        $("#notebookInput").val("");
+                    });
+                });
+            </script>
+
+            <input type="file" id="fileInput" accept=".json" style="display: none;">
+            <label for="fileInput" id="fileInputDisplay"> 選擇檔案 </label>
+            <button id="importNotebookBtn"> 匯入帳本 </button>
+
+            <script>
+                $(document).ready(function () {
+                    $("#fileInput").change(function () {
+                        const file = this.files[0] ? this.files[0].name : "未選擇檔案";
+                        $("#fileInputDisplay").text(file);
+                    });
+
+                    $("#importNotebookBtn").click(function () {
+                        const fileInput = document.getElementById("fileInput");
+                        const file = fileInput.files[0];
+
+                        if (!file) {
+                            alert("請先選擇一個 JSON 檔案！");
+                            return;
+                        }
+
+                        const reader = new FileReader();
+                        reader.onload = function (e) {
+                            try {
+                                const imported = JSON.parse(e.target.result);
+                                const { notebook, members: importedMembers, data: importedData } = imported;
+
+                                if (!notebook || !Array.isArray(importedMembers) || !Array.isArray(importedData)) {
+                                    alert("檔案格式錯誤！");
+                                    return;
+                                } else if (notebooks.includes(notebook)) {
+                                    alert("帳本已存在！")
+                                    return;
+                                }
+
+                                notebooks.push(notebook);
+                                currentNotebook = notebook;
+                                members = importedMembers;
+                                data = importedData;
+                                localStorage.setItem("notebooks", JSON.stringify(notebooks));
+                                localStorage.setItem("currentNotebook", currentNotebook);
+                                localStorage.setItem(`M_${currentNotebook}`, JSON.stringify(members));
+                                localStorage.setItem(`D_${currentNotebook}`, JSON.stringify(data));
+                                refresh();
+                            } catch (err) {
+                                alert("無法解析 JSON 檔案！");
+                            }
+                        };
+                        reader.readAsText(file);
+                        $("#fileInput").val("");
+                        $("#fileInputDisplay").text("選擇檔案");
+                    });
+                });
+            </script>
         </div>
 
         <div class="right">
-            <div class="section">
+            <div class="sections">
                 <h2> 分帳項目 </h2>
-                
+
                 <table id="dataTable">
                     <thead>
                         <tr>
-                            <th>項目</th>
-                            <th>總額</th>
-                            <th>付款</th>
-                            <th>分帳</th>
-                            <th>操作</th>
+                            <th> 項目 </th>
+                            <th> 總額 </th>
+                            <th> 付款 </th>
+                            <th> 分帳 </th>
+                            <th> 操作 </th>
                         </tr>
                     </thead>
                     <tbody></tbody>
                 </table>
 
-                <button id="clearBtn"> 清除資料 </button>
-                <button id="exportBtn"> 匯出資料 </button>
+                <script>
+                    $(document).ready(function () {
+                        $("#dataTable").on("click", ".addDataBtn", function () {
+                            const item = $("#itemInput").val().trim();
+                            const totalStr = $("#totalInput").val().trim();
+                            const total = parseFloat(totalStr);
+                            const payer = $("#payerInput").val();
+                            const split = [];
+                            let splitSum = 0;
+                            $(".amountInput").each(function () {
+                                const member = $(this).data("member");
+                                const amountStr = $(this).val().trim();
+                                const amount = parseFloat(amountStr);
+                                if (amount && amount > 0) {
+                                    split.push(`${member}: ${amount}`);
+                                    splitSum += amount;
+                                }
+                            });
+
+                            if (!item) {
+                                alert("請輸入項目");
+                                $("#itemInput").focus();
+                                return;
+                            } else if (!totalStr || isNaN(total) || total <= 0) {
+                                alert("請輸入正確的總額");
+                                $("#totalInput").focus();
+                                return;
+                            } else if (!payer) {
+                                alert("請選擇付款成員");
+                                $("#payerInput").focus();
+                                return;
+                            } else if (split.length === 0) {
+                                alert("請輸入分帳金額");
+                                $(".amountInput").first().focus();
+                                return;
+                            } else if (Math.abs(splitSum - total) > 0.01) {
+                                alert("分帳金額總和須等於總額");
+                                $(".amountInput").first().focus();
+                                return;
+                            }
+
+                            data.push({ item: item, total: total, payer: payer, split: split });
+                            localStorage.setItem(`D_${currentNotebook}`, JSON.stringify(data));
+                            refresh();
+                        });
+
+                        $("#dataTable").on("click", ".deleteDataBtn", function () {
+                            const index = $(this).data("index");
+                            data.splice(index, 1);
+                            localStorage.setItem(`D_${currentNotebook}`, JSON.stringify(data));
+                            refresh();
+                        });
+                    });
+                </script>
+
+                <button id="clearDataBtn"> 清除資料 </button>
+                <button id="exportDataBtn"> 匯出資料 </button>
+
+                <script>
+                    $(document).ready(function () {
+                        $("#clearDataBtn").click(function () {
+                            const text = data.map(d => {
+                                return `項目: ${d.item}, 總額: ${d.total}, 付款人: ${d.payer}, 分帳: ${d.split.join(", ")}`;
+                            }).join("\n");
+                            if (!text) {
+                                alert("沒有可清除的內容！");
+                                return;
+                            }
+
+                            if (confirm("你確定要清除所有分帳資料嗎？")) {
+                                data = [];
+                                localStorage.setItem(`D_${currentNotebook}`, JSON.stringify(data));
+                                refresh();
+                            }
+                        });
+
+                        $("#exportDataBtn").click(function () {
+                            const text = data.map(d => {
+                                return `項目: ${d.item}, 總額: ${d.total}, 付款人: ${d.payer}, 分帳: ${d.split.join(", ")}`;
+                            }).join("\n");
+                            if (!text) {
+                                alert("沒有可匯出的內容！");
+                                return;
+                            }
+
+                            const jsonString = JSON.stringify({ notebook: currentNotebook, members: members, data: data }, null, 4);
+                            const blob = new Blob([jsonString], { type: "application/json" });
+                            const url = URL.createObjectURL(blob);
+
+                            const a = document.createElement("a");
+                            a.href = url;
+                            a.download = "data.json";
+                            a.click();
+                            URL.revokeObjectURL(url);
+                            alert("已匯出分帳資料！");
+                        });
+                    });
+                </script>
             </div>
 
-            <div class="section">
+            <div class="sections">
                 <h2> 分帳結果 </h2>
                 <textarea id="resultArea" rows="5"></textarea>
                 <br>
-                <button id="copyBtn"> 複製結果 </button>
-                <button id="shareBtn"> 分享結果 </button>
+
+                <button id="copyResultBtn"> 複製結果 </button>
+                <button id="shareResultBtn"> 分享結果 </button>
+
+                <script>
+                    $(document).ready(function () {
+                        $("#copyResultBtn").click(function () {
+                            const text = $("#resultArea").val();
+                            if (!text) {
+                                alert("沒有可複製的內容！");
+                                return;
+                            }
+
+                            navigator.clipboard.writeText(text).then(function () {
+                                alert("已複製分帳結果！");
+                            }, function () {
+                                alert("複製失敗，請手動複製！");
+                            });
+                        });
+
+                        $("#shareResultBtn").click(function () {
+                            const text = $("#resultArea").val();
+                            if (!text) {
+                                alert("沒有可分享的內容！");
+                                return;
+                            }
+
+                            navigator.share({
+                                title: "分帳結果",
+                                text: text
+                            });
+                        });
+                    });
+                </script>
             </div>
         </div>
     </section>
