@@ -266,7 +266,7 @@ $(document).ready(function () {
             return;
         }
         if (Math.abs(splitSum - total) > 0.01) {
-            alert("分帳金額總和必須等於總額");
+            alert("分帳金額總和須等於總額");
             $(".inputAmount").first().focus();
             return;
         }
@@ -298,6 +298,27 @@ $(document).ready(function () {
         }
     });
 
+    $("#exportBtn").click(function () {
+        const text = data.map(p => {
+            return `日期: ${p.date}, 項目: ${p.item}, 總額: ${p.total}, 付款人: ${p.payer}, 分帳: ${p.split.join(", ")}`;
+        }).join("\n");
+        if (!text) {
+            alert("沒有可匯出的內容。");
+            return;
+        }
+
+        const jsonString = JSON.stringify({notebook: currentNotebook, data: data}, null, 4);
+        const blob = new Blob([jsonString], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "data.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        alert("分帳資料已匯出！");
+    });
+
     $("#copyBtn").click(function () {
         const text = $("#resultArea").val();
         if (!text) {
@@ -321,10 +342,7 @@ $(document).ready(function () {
 
         navigator.share({
             title: "分帳結果",
-            text: text,
-            url: window.location.href
-        }).catch(function (error) {
-            alert("分享失敗：" + error);
+            text: text
         });
     });
 });
