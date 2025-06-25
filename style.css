@@ -53,7 +53,7 @@ footer {
     border: 1px solid #ccc;
     border-collapse: collapse;
     margin: 1rem auto;
-    min-width: 70%;
+    min-width: 80%;
     max-width: 100%;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
@@ -69,6 +69,11 @@ footer {
 #dataTable th {
     background-color: #6366f1;
     color: white;
+}
+
+#resultArea {
+    min-width: 80%;
+    max-width: 100%;
 }
 
 input {
@@ -89,16 +94,20 @@ input {
     padding: 1rem;
     border: 1px solid #ddd;
     border-radius: 8px;
-    min-width: 200px;
     box-sizing: border-box;
 }
 
 .left {
+    min-width: 220px;
     flex: 1;
 }
 
 .right {
     flex: 3;
+    min-width: 360px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
 #notebookList {

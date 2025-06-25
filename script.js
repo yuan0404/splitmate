@@ -22,19 +22,18 @@ function renderNotebookList() {
     notebooks.forEach((name, index) => {
         const isCurrent = name === currentNotebook;
         members = JSON.parse(localStorage.getItem(`M_${name}`)) || [];
-        
+
         if (isCurrent) {
             $list.append(`
             <li class="notebookItem" data-index="${index}" data-name="${name}">
                 <div>${name} (${members.length})</div>
                 <div>
-                    <span>${
-                        members.length > 0
-                            ? members
-                                .map((m, i) => `<div>${m} <button class="deleteMemberBtn" data-member="${m}" style="display: ${isEditing ? "inline-block" : "none"};"> 刪除 </button></div>`)
-                                .join("")
-                            : ""
-                    }</span>
+                    <span>${members.length > 0
+                    ? members
+                        .map((m, i) => `<div>${m} <button class="deleteMemberBtn" data-member="${m}" style="display: ${isEditing ? "inline-block" : "none"};"> 刪除 </button></div>`)
+                        .join("")
+                    : ""
+                }</span>
                 </div>
                 <div>
                     <input type="text" class="inputMember" placeholder="輸入成員名稱" style="display: ${isEditing ? "inline-block" : "none"};">
@@ -64,7 +63,6 @@ function renderTable() {
     data.forEach((p, i) => {
         $tbody.append(`
             <tr>
-                <td>${p.date}</td>
                 <td>${p.item}</td>
                 <td>${p.total}</td>
                 <td>${p.payer}</td>
@@ -78,7 +76,7 @@ function renderTable() {
         $tbody.append("<tr><td colspan='7'>請先選擇或創建一個帳本</td></tr>");
         return;
     }
-    
+
     if (members.length === 0) {
         $tbody.append("<tr><td colspan='7'>目前沒有成員，請先新增成員</td></tr>");
         return;
@@ -86,7 +84,6 @@ function renderTable() {
 
     $tbody.append(`
         <tr>
-            <td><input type="text" id="inputDate" placeholder="MM/DD" pattern="\\d{2}/\\d{2}"></td>
             <td><input type="text" id="inputItem" placeholder="輸入項目"></td>
             <td><input type="text" id="inputTotal" placeholder="輸入總額"></td>
             <td>
@@ -223,7 +220,6 @@ $(document).ready(function () {
     });
 
     $("#dataTable").on("click", ".addBtn", function () {
-        const date = $("#inputDate").val().trim();
         const item = $("#inputItem").val().trim();
         const totalStr = $("#inputTotal").val().trim();
         const total = parseFloat(totalStr);
@@ -240,11 +236,6 @@ $(document).ready(function () {
             }
         });
 
-        if (!date || !/^\d{2}\/\d{2}$/.test(date)) {
-            alert("請輸入正確的日期格式 (MM/DD)");
-            $("#inputDate").focus();
-            return;
-        }
         if (!item) {
             alert("請輸入項目");
             $("#inputItem").focus();
@@ -271,11 +262,10 @@ $(document).ready(function () {
             return;
         }
 
-        data.push({ date: date, item: item, total: total, payer: payer, split: split });
+        data.push({ item: item, total: total, payer: payer, split: split });
         localStorage.setItem(`D_${currentNotebook}`, JSON.stringify(data));
         renderTable();
 
-        $("#inputDate").val("");
         $("#inputItem").val("");
         $("#inputTotal").val("");
         $("#inputPayer").val("");
@@ -298,16 +288,66 @@ $(document).ready(function () {
         }
     });
 
+    $("#inputFile").change(function () {
+        const fileName = this.files[0] ? this.files[0].name : "未選擇檔案";
+        $("#inputFileDisplay").text(fileName);
+    });
+
+    $("#importBtn").click(function () {
+        const fileInput = document.getElementById("inputFile");
+        const file = fileInput.files[0];
+    
+        if (!file) {
+            alert("請先選擇一個 JSON 檔案！");
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            try {
+                const imported = JSON.parse(e.target.result);
+                const { notebook, members: importedMembers, data: importedData } = imported;
+
+                if (!notebook || !Array.isArray(importedMembers) || !Array.isArray(importedData)) {
+                    alert("檔案格式錯誤！");
+                    return;
+                }
+
+                if (!notebooks.includes(notebook)) {
+                    notebooks.push(notebook);
+                    localStorage.setItem("notebooks", JSON.stringify(notebooks));
+                } else {
+                    alert("帳本已存在！")
+                    return;
+                }
+
+                currentNotebook = notebook;
+                members = importedMembers;
+                data = importedData;
+                localStorage.setItem("currentNotebook", currentNotebook);
+                localStorage.setItem(`M_${notebook}`, JSON.stringify(importedMembers));
+                localStorage.setItem(`D_${notebook}`, JSON.stringify(importedData));
+                renderNotebookList();
+                renderTable();
+            } catch (err) {
+                alert("無法解析 JSON 檔案！");
+            }
+        };
+        reader.readAsText(file);
+        $("#inputFile").val("");
+        $("#inputFileDisplay").text("選擇檔案");
+    });
+
     $("#exportBtn").click(function () {
         const text = data.map(p => {
-            return `日期: ${p.date}, 項目: ${p.item}, 總額: ${p.total}, 付款人: ${p.payer}, 分帳: ${p.split.join(", ")}`;
+            return `項目: ${p.item}, 總額: ${p.total}, 付款人: ${p.payer}, 分帳: ${p.split.join(", ")}`;
         }).join("\n");
         if (!text) {
             alert("沒有可匯出的內容。");
             return;
         }
 
-        const jsonString = JSON.stringify({notebook: currentNotebook, data: data}, null, 4);
+        const jsonString = JSON.stringify({ notebook: currentNotebook, members: members, data: data }, null, 4);
         const blob = new Blob([jsonString], { type: "application/json" });
         const url = URL.createObjectURL(blob);
 
