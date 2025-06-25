@@ -53,7 +53,8 @@ footer {
     border: 1px solid #ccc;
     border-collapse: collapse;
     margin: 1rem auto;
-    width: 80%;
+    min-width: 70%;
+    max-width: 100%;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
@@ -71,7 +72,8 @@ footer {
 }
 
 input {
-  width: 40px;
+    width: 80%;
+    max-width: 80px;
 }
 
 .sections {
@@ -110,3 +112,6 @@ input {
   cursor: pointer;
 }
 
+.splitLabel {
+    display: flex;
+}

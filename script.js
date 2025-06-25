@@ -1,6 +1,8 @@
 let notebooks = JSON.parse(localStorage.getItem("notebooks")) || [];
 let currentNotebook = localStorage.getItem("currentNotebook") || "";
-let splitData = JSON.parse(localStorage.getItem(currentNotebook)) || [];
+let members = JSON.parse(localStorage.getItem(`M_${currentNotebook}`)) || [];
+let data = JSON.parse(localStorage.getItem(`D_${currentNotebook}`)) || [];
+let isEditing = false;
 
 function renderNotebookList() {
     if (!notebooks.includes(currentNotebook)) {
@@ -13,20 +15,33 @@ function renderNotebookList() {
 
     if (notebooks.length === 0) {
         $list.append("<li>目前沒有帳本</li>");
+        $("#inputNotebook").focus();
         return;
     }
 
     notebooks.forEach((name, index) => {
         const isCurrent = name === currentNotebook;
+        members = JSON.parse(localStorage.getItem(`M_${name}`)) || [];
+        
         if (isCurrent) {
             $list.append(`
             <li class="notebookItem" data-index="${index}" data-name="${name}">
-                ${name}
-                <div class="notebookMembers">
-                
+                <div>${name} (${members.length})</div>
+                <div>
+                    <span>${
+                        members.length > 0
+                            ? members
+                                .map((m, i) => `<div>${m} <button class="deleteMemberBtn" data-member="${m}" style="display: ${isEditing ? "inline-block" : "none"};"> 刪除 </button></div>`)
+                                .join("")
+                            : ""
+                    }</span>
                 </div>
-                <br>
-                <div class="notebookActions">
+                <div>
+                    <input type="text" class="inputMember" placeholder="輸入成員名稱" style="display: ${isEditing ? "inline-block" : "none"};">
+                    <button class="addMemberBtn" data-index="${index}" style="display: ${isEditing ? "inline-block" : "none"};">新增</button>
+                </div>
+                <div>
+                    <button class="editNotebookBtn" data-index="${index}"> ${isEditing ? "完成編輯" : "編輯成員"} </button>
                     <button class="deleteNotebookBtn" data-index="${index}"> 移除帳本 </button>
                 </div>
             </li>
@@ -35,7 +50,7 @@ function renderNotebookList() {
         else {
             $list.append(`
                 <li class="notebookItem" data-index="${index}" data-name="${name}">
-                    ${name}
+                    <div>${name} (${members.length})</div>
                 </li>
             `);
         }
@@ -46,28 +61,50 @@ function renderTable() {
     const $tbody = $("#dataTable tbody");
     $tbody.empty();
 
-    splitData.forEach((p, i) => {
+    data.forEach((p, i) => {
         $tbody.append(`
             <tr>
                 <td>${p.date}</td>
                 <td>${p.item}</td>
-                <td>${p.payer}</td>
                 <td>${p.total}</td>
-                <td>${p.split}</td>
-                <td>${p.amount}</td>
+                <td>${p.payer}</td>
+                <td>${String(p.split).split(",").join("<br>")}</td>
                 <td><button class="deleteBtn" data-index="${i}">刪除</button></td>
             </tr>
         `);
     });
 
+    if (!currentNotebook) {
+        $tbody.append("<tr><td colspan='7'>請先選擇或創建一個帳本</td></tr>");
+        return;
+    }
+    
+    if (members.length === 0) {
+        $tbody.append("<tr><td colspan='7'>目前沒有成員，請先新增成員</td></tr>");
+        return;
+    }
+
     $tbody.append(`
         <tr>
             <td><input type="text" id="inputDate" placeholder="MM/DD" pattern="\\d{2}/\\d{2}"></td>
             <td><input type="text" id="inputItem" placeholder="輸入項目"></td>
-            <td><input type="text" id="inputPayer" placeholder="輸入付款"></td>
             <td><input type="text" id="inputTotal" placeholder="輸入總額"></td>
-            <td><input type="text" id="inputSplit" placeholder="輸入分帳"></td>
-            <td><input type="text" id="inputAmount" placeholder="輸入金額"></td>
+            <td>
+                <select id="inputPayer">
+                    <option value="" selected disabled> 請選擇 </option>
+                    ${members.map(m => `<option value="${m}">${m}</option>`).join("")}
+                </select>
+            </td>
+            <td>
+                <div id="inputSplit">
+                    ${members.map(m => `
+                        <label class="splitLabel">
+                            <div>${m}: </div> 
+                            <input type="text" class="inputAmount" data-member="${m}" placeholder="輸入金額">
+                        </label>
+                    `).join("")}
+                </div>
+            </td>
             <td><button class="addBtn"> 新增 </button></td>
         </tr>
     `);
@@ -79,11 +116,68 @@ $(document).ready(function () {
 
     $("#notebookList").on("click", ".notebookItem", function () {
         const selected = String($(this).data("name"));
+        if (selected === currentNotebook) return;
         currentNotebook = selected;
+        isEditing = false;
         localStorage.setItem("currentNotebook", currentNotebook);
         renderNotebookList();
-        splitData = JSON.parse(localStorage.getItem(currentNotebook)) || [];
+        members = JSON.parse(localStorage.getItem(`M_${currentNotebook}`)) || [];
+        data = JSON.parse(localStorage.getItem(`D_${currentNotebook}`)) || [];
         renderTable();
+    });
+
+    $("#notebookList").on("click", ".deleteMemberBtn", function () {
+        const member = $(this).data("member");
+        members = JSON.parse(localStorage.getItem(`M_${currentNotebook}`)) || [];
+        const index = members.indexOf(member);
+        members.splice(index, 1);
+        localStorage.setItem(`M_${currentNotebook}`, JSON.stringify(members));
+        renderNotebookList();
+        renderTable();
+        $(".inputMember").focus();
+    });
+
+    $("#notebookList").on("click", ".addMemberBtn", function () {
+        const member = $(".inputMember").val().trim();
+        if (!member) {
+            alert("請輸入成員名稱");
+            $(".inputMember").focus();
+            return;
+        }
+
+        members = JSON.parse(localStorage.getItem(`M_${currentNotebook}`)) || [];
+        if (members.includes(member)) {
+            alert("成員已存在！");
+            $(".inputMember").focus();
+            return;
+        }
+
+        members.push(member);
+        localStorage.setItem(`M_${currentNotebook}`, JSON.stringify(members));
+        $(".inputMember").val("");
+        renderNotebookList();
+        renderTable();
+        $(".inputMember").focus();
+    });
+
+    $("#notebookList").on("click", ".editNotebookBtn", function () {
+        $(".inputMember").toggle();
+        $(".addMemberBtn").toggle();
+        $(".deleteMemberBtn").toggle();
+
+        isEditing = !isEditing;
+        if (isEditing) {
+            $(this).text("完成編輯");
+        } else {
+            $(this).text("編輯成員");
+        }
+
+        renderNotebookList();
+        renderTable();
+
+        if (isEditing) {
+            $(".inputMember").focus();
+        }
     });
 
     $("#notebookList").on("click", ".deleteNotebookBtn", function () {
@@ -94,21 +188,24 @@ $(document).ready(function () {
             notebooks.splice(index, 1);
             localStorage.setItem("notebooks", JSON.stringify(notebooks));
             renderNotebookList();
-            splitData = [];
-            localStorage.removeItem(name);
+            members = [];
+            localStorage.removeItem(`M_${name}`);
+            data = [];
+            localStorage.removeItem(`D_${name}`);
             renderTable();
         }
     });
 
-
     $("#createNotebookBtn").click(function () {
-        const name = $("#notebookInput").val().trim();
+        const name = $("#inputNotebook").val().trim();
         if (!name) {
             alert("請輸入帳本名稱");
+            $("#inputNotebook").focus();
             return;
         }
         if (notebooks.includes(name)) {
             alert("帳本名稱已存在！");
+            $("#inputNotebook").focus();
             return;
         }
 
@@ -116,88 +213,118 @@ $(document).ready(function () {
         localStorage.setItem("notebooks", JSON.stringify(notebooks));
         currentNotebook = name;
         localStorage.setItem("currentNotebook", currentNotebook);
-        $("#notebookInput").val("");
+        $("#inputNotebook").val("");
         renderNotebookList();
-        splitData = [];
-        localStorage.setItem(currentNotebook, JSON.stringify(splitData));
+        members = [];
+        localStorage.setItem(`M_${currentNotebook}`, JSON.stringify(members));
+        data = [];
+        localStorage.setItem(`D_${currentNotebook}`, JSON.stringify(data));
         renderTable();
     });
 
     $("#dataTable").on("click", ".addBtn", function () {
-        if (!currentNotebook) {
-            alert("請先選擇或創建一個帳本");
-            return;
-        }
-
         const date = $("#inputDate").val().trim();
         const item = $("#inputItem").val().trim();
-        const payer = $("#inputPayer").val().trim();
         const totalStr = $("#inputTotal").val().trim();
         const total = parseFloat(totalStr);
-        const split = $("#inputSplit").val().trim();
-        const amountStr = $("#inputAmount").val().trim();
-        const amount = parseFloat(amountStr);
+        const payer = $("#inputPayer").val();
+        const split = [];
+        let splitSum = 0;
+        $(".inputAmount").each(function () {
+            const member = $(this).data("member");
+            const amountStr = $(this).val().trim();
+            const amount = parseFloat(amountStr);
+            if (amount && amount > 0) {
+                split.push(`${member}: ${amount}`);
+                splitSum += amount;
+            }
+        });
 
         if (!date || !/^\d{2}\/\d{2}$/.test(date)) {
             alert("請輸入正確的日期格式 (MM/DD)");
+            $("#inputDate").focus();
             return;
         }
         if (!item) {
             alert("請輸入項目");
-            return;
-        }
-        if (!payer) {
-            alert("請輸入付款人");
+            $("#inputItem").focus();
             return;
         }
         if (!totalStr || isNaN(total) || total <= 0) {
             alert("請輸入正確的總額");
+            $("#inputTotal").focus();
             return;
         }
-        if (!split) {
-            alert("請輸入分帳人");
+        if (!payer) {
+            alert("請選擇付款成員");
+            $("#inputPayer").focus();
             return;
         }
-        if (!amountStr || isNaN(amount) || amount <= 0) {
-            alert("請輸入正確的金額");
+        if (split.length === 0) {
+            alert("請輸入分帳金額");
+            $(".inputAmount").first().focus();
+            return;
+        }
+        if (Math.abs(splitSum - total) > 0.01) {
+            alert("分帳金額總和必須等於總額");
+            $(".inputAmount").first().focus();
             return;
         }
 
-        splitData.push({ date: date, item: item, payer: payer, total: total, split: split, amount: amount });
-        localStorage.setItem(currentNotebook, JSON.stringify(splitData));
+        data.push({ date: date, item: item, total: total, payer: payer, split: split });
+        localStorage.setItem(`D_${currentNotebook}`, JSON.stringify(data));
         renderTable();
 
         $("#inputDate").val("");
         $("#inputItem").val("");
-        $("#inputPayer").val("");
         $("#inputTotal").val("");
-        $("#inputSplit").val("");
-        $("#inputAmount").val("");
+        $("#inputPayer").val("");
+        $(".splitCheckbox").prop("checked", false);
     });
 
     $("#dataTable").on("click", ".deleteBtn", function () {
-        if (!currentNotebook) {
-            alert("請先選擇或創建一個帳本");
-            return;
-        }
-
         const index = $(this).data("index");
-        splitData.splice(index, 1);
-        localStorage.setItem(currentNotebook, JSON.stringify(splitData));
+        data.splice(index, 1);
+        localStorage.setItem(`D_${currentNotebook}`, JSON.stringify(data));
         renderTable();
     });
 
     $("#clearBtn").click(function () {
-        if (!currentNotebook) {
-            alert("請先選擇或創建一個帳本");
-            return;
-        }
-
         if (confirm("你確定要清除所有分帳資料嗎？這個動作無法復原。")) {
-            splitData = [];
-            localStorage.setItem(currentNotebook, JSON.stringify(splitData));
+            data = [];
+            localStorage.setItem(`D_${currentNotebook}`, JSON.stringify(data));
             renderTable();
             alert("所有資料已清除！");
         }
+    });
+
+    $("#copyBtn").click(function () {
+        const text = $("#resultArea").val();
+        if (!text) {
+            alert("沒有可複製的內容。");
+            return;
+        }
+
+        navigator.clipboard.writeText(text).then(function () {
+            alert("已複製分帳結果！");
+        }, function () {
+            alert("複製失敗，請手動複製。");
+        });
+    });
+
+    $("#shareBtn").click(function () {
+        const text = $("#resultArea").val();
+        if (!text) {
+            alert("沒有可分享的內容。");
+            return;
+        }
+
+        navigator.share({
+            title: "分帳結果",
+            text: text,
+            url: window.location.href
+        }).catch(function (error) {
+            alert("分享失敗：" + error);
+        });
     });
 });

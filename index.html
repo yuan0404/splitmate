@@ -28,39 +28,38 @@
     <section class="sections">
         <div class="section left">
             <h2>帳本管理</h2>
-            <ul id="notebookList">
-            </ul>
-
-            <input type="text" id="notebookInput" placeholder="新帳本名稱">
+            <ul id="notebookList"></ul>
+            <input type="text" id="inputNotebook" placeholder="新帳本名稱">
             <button id="createNotebookBtn">建立帳本</button>
         </div>
 
         <div class="section right">
-            <h2> 哈囉，我是你的分帳小幫手 </h2>
-            <p> 這裡可以記錄分帳狀況，幫你計算每個人的費用 </p>
-
+            <h2> 分帳項目 </h2>
+            
             <table id="dataTable">
                 <thead>
                     <tr>
                         <th>日期</th>
                         <th>項目</th>
-                        <th>付款</th>
                         <th>總額</th>
+                        <th>付款</th>
                         <th>分帳</th>
-                        <th>金額</th>
                         <th>操作</th>
                     </tr>
                 </thead>
-                <tbody>
-                </tbody>
+                <tbody></tbody>
             </table>
 
             <button id="clearBtn"> 清除資料 </button>
+            <button id="calculateBtn"> 計算分帳 </button>
+            <br><textarea id="resultArea" placeholder="分帳結果"></textarea><br>
+            <button id="copyBtn"> 複製結果 </button>
+            <button id="shareBtn"> 分享結果 </button>
         </div>
     </section>
 
     <footer>
-        <p> &copy; 2025 SplitMate | 使用 GitHub Pages 架設 </p>
+        <p> Copyright &copy; 2025 SplitMate | 使用 GitHub Pages 架設 </p>
     </footer>
 </body>
 
