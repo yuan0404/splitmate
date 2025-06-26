@@ -142,7 +142,7 @@
             </script>
 
             <input type="file" id="fileInput" accept=".json" style="display: none;">
-            <label for="fileInput" id="fileInputDisplay"> 選擇檔案 </label>
+            <label for="fileInput" id="fileInputDisplay"> 未選擇檔案 </label>
             <button id="importNotebookBtn"> 匯入帳本 </button>
 
             <script>
@@ -190,7 +190,7 @@
                         };
                         reader.readAsText(file);
                         $("#fileInput").val("");
-                        $("#fileInputDisplay").text("選擇檔案");
+                        $("#fileInputDisplay").text("未選擇檔案");
                     });
                 });
             </script>

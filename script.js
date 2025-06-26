@@ -26,7 +26,7 @@ function notebookList() {
         if (n === currentNotebook) {
             $list.append(`
                 <li class="notebookItem" data-name="${n}" data-index="${i}">
-                    ${n} (${members.length})
+                    <strong class="notebookName"> ${n} (${members.length}) </strong>
                     <div>
                         ${members.map((m) => `
                             <div class="memberRow">
@@ -42,7 +42,11 @@ function notebookList() {
             `);
         }
         else {
-            $list.append(`<li class="notebookItem" data-name="${n}" data-index="${i}"> ${n} (${members.length}) </li>`);
+            $list.append(`
+                <li class="notebookItem" data-name="${n}" data-index="${i}"> 
+                    <div class="notebookName"> ${n} (${members.length}) </div>
+                </li>
+            `);
         }
     });
 }
